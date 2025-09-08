@@ -17,7 +17,7 @@ pipeline {
       steps {
         dir("${env.TF_DIR}") {
           withCredentials([
-            [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']
+            [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']
           ]) {
             sh 'terraform init'
           }
@@ -29,7 +29,7 @@ pipeline {
       steps {
         dir("${env.TF_DIR}") {
           withCredentials([
-            [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']
+            [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']
           ]) {
             sh 'terraform validate'
           }
@@ -41,7 +41,7 @@ pipeline {
       steps {
         dir("${env.TF_DIR}") {
           withCredentials([
-            [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']
+            [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']
           ]) {
             sh 'terraform plan -out=tfplan'
           }
@@ -53,7 +53,7 @@ pipeline {
       steps {
         dir("${env.TF_DIR}") {
           withCredentials([
-            [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']
+            [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']
           ]) {
             sh 'terraform apply -auto-approve tfplan'
           }
