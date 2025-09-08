@@ -2,10 +2,8 @@ pipeline {
   agent any
 
   environment {
-    TF_DIR = 'terraform'
-     AWS_REGION = 'us-east-1'
-    AWS_ACCESS_KEY_ID     = credentials('aws-access-key-id')
-    AWS_SECRET_ACCESS_KEY = credentials('aws-secret-access-key')
+    TF_DIR     = 'terraform'
+    AWS_REGION = 'us-east-1'
   }
 
   stages {
@@ -18,7 +16,11 @@ pipeline {
     stage('Terraform Init') {
       steps {
         dir("${env.TF_DIR}") {
-          sh 'terraform init'
+          withCredentials([
+            [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']
+          ]) {
+            sh 'terraform init'
+          }
         }
       }
     }
@@ -26,7 +28,11 @@ pipeline {
     stage('Terraform Validate') {
       steps {
         dir("${env.TF_DIR}") {
-          sh 'terraform validate'
+          withCredentials([
+            [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']
+          ]) {
+            sh 'terraform validate'
+          }
         }
       }
     }
@@ -34,7 +40,11 @@ pipeline {
     stage('Terraform Plan') {
       steps {
         dir("${env.TF_DIR}") {
-          sh 'terraform plan -out=tfplan'
+          withCredentials([
+            [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']
+          ]) {
+            sh 'terraform plan -out=tfplan'
+          }
         }
       }
     }
@@ -42,7 +52,11 @@ pipeline {
     stage('Terraform Apply') {
       steps {
         dir("${env.TF_DIR}") {
-          sh 'terraform apply -auto-approve tfplan'
+          withCredentials([
+            [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-creds']
+          ]) {
+            sh 'terraform apply -auto-approve tfplan'
+          }
         }
       }
     }
