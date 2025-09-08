@@ -8,14 +8,14 @@ function OrderStatus() {
   const [version, setVersion] = useState("...");
 
   useEffect(() => {
-    axios.get(`${API_BASE}/status`)
+    axios.get(`http://172.27.142.7:8080/status`)
       .then(res => setStatus(res.data.order_status))
       .catch(err => {
         console.error("Status error:", err);
         setStatus("Error fetching status");
       });
 
-    axios.get(`${API_BASE}/version`)
+    axios.get(`http://172.27.142.7:8080/version`)
       .then(res => setVersion(res.data.version))
       .catch(err => {
         console.error("Version error:", err);

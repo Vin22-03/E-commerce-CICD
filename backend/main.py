@@ -1,50 +1,65 @@
-
 from fastapi import FastAPI
-from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
+# ✅ CORS for frontend connection
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # You can restrict this later
+    allow_origins=["*"],  # Can be changed to specific domain in prod
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-
+# ✅ Product list synced with ProductList.js
 products = [
-    {"id": 1, "name": "Laptop", "price": 75000},
-    {"id": 2, "name": "Phone", "price": 45000},
-    {"id": 3, "name": "Headphones", "price": 3000}
+    {
+        "id": 1,
+        "name": "MacBook Pro",
+        "price": 199900,
+        "image": "https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/mbp14-spacegray-select-202310?wid=452&hei=420&fmt=jpeg&qlt=95&.v=1697311085375"
+    },
+    {
+        "id": 2,
+        "name": "iPhone 16 Pro",
+        "price": 139900,
+        "image": "https://store.storeimages.cdn-apple.com/1/as-images.apple.com/is/iphone-16-pro-finish-select-202409-6-9inch-blacktitanium?wid=452&hei=420&fmt=jpeg&qlt=95"
+    },
+    {
+        "id": 3,
+        "name": "AirPods Max",
+        "price": 59900,
+        "image": "https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/airpods-max-select-skyblue-202011?wid=452&hei=420&fmt=jpeg&qlt=95&.v=1604022365000"
+    }
 ]
 
+# ✅ GET /products endpoint
 @app.get("/products")
 def get_products():
     return {"products": products}
 
-class Order(BaseModel):
-    product_id: int
-    quantity: int
-
+# ✅ Dummy POST order (future extensible)
 @app.post("/order")
-def place_order(order: Order):
+def place_order(order: dict):
     return {
         "message": "Order received!",
-        "product_id": order.product_id,
-        "quantity": order.quantity,
+        "product_id": order.get("product_id"),
+        "quantity": order.get("quantity"),
         "status": "confirmed"
     }
 
+# ✅ Order status for OrderStatus.js
 @app.get("/status")
-def status():
-    return {"order_status": "delivered"}
+def get_status():
+    return {"order_status": "Delivered"}  # Static value for UI
 
+# ✅ App version endpoint
 @app.get("/version")
-def version():
+def get_version():
     return {"version": "v1.0-blue"}
 
+# ✅ Health check for DevOps monitoring
 @app.get("/health")
 def health():
     return {"status": "OK"}
