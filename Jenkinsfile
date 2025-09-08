@@ -3,9 +3,9 @@ pipeline {
 
   environment {
     TF_DIR = 'terraform'
-    AWS_PROFILE = 'aws-ecr'             // ✅ Use this profile
-    AWS_REGION = 'us-east-1'
-
+     AWS_REGION = 'us-east-1'
+    AWS_ACCESS_KEY_ID     = credentials('aws-access-key-id')
+    AWS_SECRET_ACCESS_KEY = credentials('aws-secret-access-key')
   }
 
   stages {
