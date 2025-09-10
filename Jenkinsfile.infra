@@ -29,7 +29,7 @@ pipeline {
           withCredentials([
             [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']
           ]) {
-            sh 'terraform init -migrate-state'
+            sh 'terraform init -reconfigure'
           }
         }
       }
