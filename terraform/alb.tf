@@ -2,7 +2,7 @@ resource "aws_lb" "frontend_alb" {
   name               = "vincloudops-alb"
   internal           = false
   load_balancer_type = "application"
-  security_groups    = [aws_security_group.alb_sg.id]
+  security_groups    = ["sg-09d0d8d1d8ee2054d"]
   subnets            = var.public_subnet_ids
 }
 
