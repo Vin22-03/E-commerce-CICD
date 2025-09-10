@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-blue
+  labels:
+    app: backend
+    version: blue
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+      version: blue
+  template:
+    metadata:
+      labels:
+        app: backend
+        version: blue
+    spec:
+      containers:
+        - name: vin-notes-app
+          image: 921483785411.dkr.ecr.us-east-1.amazonaws.com/vin-notes-app:v1.0-blue
+          ports:
+            - containerPort: 8080

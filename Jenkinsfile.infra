@@ -1,9 +1,19 @@
+// 🚀 Add input parameter to Jenkins job
+properties([
+  parameters([
+    string(name: 'VERSION_TAG', defaultValue: 'v1.0-blue', description: 'Enter Docker image version tag (e.g., v1.1-green)')
+  ])
+])
+
 pipeline {
   agent any
 
   environment {
-    TF_DIR     = 'terraform'
-    AWS_REGION = 'us-east-1'
+    TF_DIR       = 'terraform'
+    AWS_REGION   = 'us-east-1'
+    ECR_URL      = '921483785411.dkr.ecr.us-east-1.amazonaws.com'
+    APP_NAME     = 'vin-notes-app'
+    FULL_IMAGE   = "${ECR_URL}/${APP_NAME}:${VERSION_TAG}"
   }
 
   stages {
@@ -60,14 +70,33 @@ pipeline {
         }
       }
     }
+
+    stage('Docker Build & Push') {
+      steps {
+        withCredentials([
+          [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']
+        ]) {
+          sh '''
+            echo "🛠️ Building Docker Image: $FULL_IMAGE"
+            docker build -t $FULL_IMAGE .
+
+            echo "🔐 Logging in to ECR"
+            aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_URL
+
+            echo "📦 Pushing Image to ECR"
+            docker push $FULL_IMAGE
+          '''
+        }
+      }
+    }
   }
 
   post {
     failure {
-      echo '❌ Terraform pipeline failed!'
+      echo '❌ Deployment pipeline failed!'
     }
     success {
-      echo '✅ Terraform infra applied successfully!'
+      echo "✅ Docker Image pushed as: ${env.FULL_IMAGE}"
     }
   }
 }
