@@ -27,3 +27,7 @@ output "eks_cluster_arn" {
   value       = aws_eks_cluster.main.arn
   description = "EKS Cluster ARN"
 }
+
+output "debug_subnet_ids" {
+  value = var.public_subnet_ids
+}
