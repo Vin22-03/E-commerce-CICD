@@ -15,3 +15,8 @@ variable "vpc_cidr" {
   type        = string
   default     = "10.0.0.0/16"
 }
+
+variable "public_subnet_ids" {
+  description = "List of public subnet IDs for ALB"
+  type        = list(string)
+}
