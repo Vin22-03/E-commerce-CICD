@@ -17,7 +17,7 @@ pipeline {
 
     stage('Configure kubeconfig') {
       steps {
-        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']])
+        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
           sh '''
             echo "⚙️ Setting up kubeconfig for EKS cluster"
             aws eks update-kubeconfig \
@@ -34,37 +34,38 @@ pipeline {
         expression { return params.APPLY_SERVICES == true }
       }
       steps {
-        withEnv(["KUBECONFIG=${env.KUBECONFIG}"]) {
-          sh '''
-            echo "🌐 Applying frontend & backend service YAMLs"
-            kubectl apply -f k8s/frontend-service.yaml
-            kubectl apply -f k8s/backend-service.yaml
-          '''
+        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
+          withEnv(["KUBECONFIG=${env.KUBECONFIG}"]) {
+            sh '''
+              echo "🌐 Applying frontend & backend service YAMLs"
+              kubectl apply -f k8s/frontend-service.yaml
+              kubectl apply -f k8s/backend-service.yaml
+            '''
+          }
         }
       }
     }
 
     stage('Deploy to EKS (Dynamic Version)') {
       steps {
-        withEnv(["KUBECONFIG=${env.KUBECONFIG}", "VERSION_TAG=${params.VERSION_TAG}"]) {
-          sh '''
-            echo "📦 Injecting version tag: $VERSION_TAG into deployment files"
+        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
+          withEnv(["KUBECONFIG=${env.KUBECONFIG}", "VERSION_TAG=${params.VERSION_TAG}", "DEPLOY_COLOR=${params.DEPLOY_COLOR}"]) {
+            sh '''
+              echo "📦 Injecting version tag: $VERSION_TAG into deployment files"
 
-            # Replace image tag placeholder with VERSION_TAG dynamically
-            export DEPLOY_COLOR=${DEPLOY_COLOR}
+              echo "🔄 Rendering backend-$DEPLOY_COLOR.yaml"
+              envsubst < k8s/backend-$DEPLOY_COLOR.yaml > rendered-backend.yaml
 
-            echo "🔄 Rendering backend-${DEPLOY_COLOR}.yaml"
-            envsubst < k8s/backend-${DEPLOY_COLOR}.yaml > rendered-backend.yaml
+              echo "🔄 Rendering frontend-$DEPLOY_COLOR.yaml"
+              envsubst < k8s/frontend-$DEPLOY_COLOR.yaml > rendered-frontend.yaml
 
-            echo "🔄 Rendering frontend-${DEPLOY_COLOR}.yaml"
-            envsubst < k8s/frontend-${DEPLOY_COLOR}.yaml > rendered-frontend.yaml
+              echo "🚀 Applying backend deployment"
+              kubectl apply -f rendered-backend.yaml
 
-            echo "🚀 Applying backend deployment"
-            kubectl apply -f rendered-backend.yaml
-
-            echo "🚀 Applying frontend deployment"
-            kubectl apply -f rendered-frontend.yaml
-          '''
+              echo "🚀 Applying frontend deployment"
+              kubectl apply -f rendered-frontend.yaml
+            '''
+          }
         }
       }
     }
