@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vin-notes-backend-green
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vin-notes-backend-green
+  template:
+    metadata:
+      labels:
+        app: vin-notes-backend-green
+    spec:
+      containers:
+        - name: backend
+          image: 921483785411.dkr.ecr.us-east-1.amazonaws.com/vin-notes-app:v1.0-green
+          ports:
+            - containerPort: 3001
