@@ -21,4 +21,5 @@ spec:
         - name: frontend
           image: 921483785411.dkr.ecr.us-east-1.amazonaws.com/frontend:v1.0-blue
           ports:
-            - containerPort: 3001
+            - containerPort: 80
+

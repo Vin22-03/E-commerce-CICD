@@ -21,4 +21,4 @@ spec:
         - name: frontend
           image: vincloudops/frontend:v1.0-green
           ports:
-            - containerPort: 3001
+            - containerPort: 80

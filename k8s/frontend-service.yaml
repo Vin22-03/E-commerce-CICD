@@ -10,5 +10,5 @@ spec:
   ports:
     - protocol: TCP
       port: 80          # Exposes port 80 outside the cluster
-      targetPort: 3001  # Port on the frontend container
+      targetPort: 80  # Port on the frontend container
   type: LoadBalancer     # Or NodePort if you're using Minikube/EKS with external LB
