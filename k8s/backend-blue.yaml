@@ -19,6 +19,6 @@ spec:
     spec:
       containers:
         - name: vin-notes-app
-          image: 921483785411.dkr.ecr.us-east-1.amazonaws.com/vin-notes-app:v1.0-blue
+          image: 921483785411.dkr.ecr.us-east-1.amazonaws.com/vin-notes-app:${VERSION_TAG}
           ports:
             - containerPort: 8080

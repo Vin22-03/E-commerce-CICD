@@ -2,8 +2,9 @@ pipeline {
   agent any
 
   parameters {
+    string(name: 'VERSION_TAG', defaultValue: 'v1.0-blue', description: 'Enter Docker image version (e.g. v1.0-green)')
     choice(name: 'DEPLOY_COLOR', choices: ['blue', 'green'], description: 'Choose which version to deploy')
-    booleanParam(name: 'APPLY_SERVICES', defaultValue: false, description: 'Apply service YAMLs (use only on first deploy or when modified)')
+    booleanParam(name: 'APPLY_SERVICES', defaultValue: false, description: 'Apply service YAMLs (only on first deploy or update)')
   }
 
   environment {
@@ -33,30 +34,37 @@ pipeline {
         expression { return params.APPLY_SERVICES == true }
       }
       steps {
-        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
-          withEnv(["KUBECONFIG=${env.KUBECONFIG}"]) {
-            sh '''
-              echo "🌐 Applying frontend & backend service YAMLs"
-              kubectl apply -f k8s/frontend-service.yaml
-              kubectl apply -f k8s/backend-service.yaml
-            '''
-          }
+        withEnv(["KUBECONFIG=${env.KUBECONFIG}"]) {
+          sh '''
+            echo "🌐 Applying frontend & backend service YAMLs"
+            kubectl apply -f k8s/frontend-service.yaml
+            kubectl apply -f k8s/backend-service.yaml
+          '''
         }
       }
     }
 
-    stage('Deploy to EKS') {
+    stage('Deploy to EKS (Dynamic Version)') {
       steps {
-        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
-          withEnv(["KUBECONFIG=${env.KUBECONFIG}"]) {
-            sh '''
-              echo "📦 Deploying backend: k8s/deployment-${DEPLOY_COLOR}.yaml"
-              kubectl apply -f k8s/deployment-${DEPLOY_COLOR}.yaml
+        withEnv(["KUBECONFIG=${env.KUBECONFIG}", "VERSION_TAG=${params.VERSION_TAG}"]) {
+          sh '''
+            echo "📦 Injecting version tag: $VERSION_TAG into deployment files"
 
-              echo "🎨 Deploying frontend: k8s/frontend-${DEPLOY_COLOR}.yaml"
-              kubectl apply -f k8s/frontend-${DEPLOY_COLOR}.yaml
-            '''
-          }
+            # Replace image tag placeholder with VERSION_TAG dynamically
+            export DEPLOY_COLOR=${DEPLOY_COLOR}
+
+            echo "🔄 Rendering backend-${DEPLOY_COLOR}.yaml"
+            envsubst < k8s/backend-${DEPLOY_COLOR}.yaml > rendered-backend.yaml
+
+            echo "🔄 Rendering frontend-${DEPLOY_COLOR}.yaml"
+            envsubst < k8s/frontend-${DEPLOY_COLOR}.yaml > rendered-frontend.yaml
+
+            echo "🚀 Applying backend deployment"
+            kubectl apply -f rendered-backend.yaml
+
+            echo "🚀 Applying frontend deployment"
+            kubectl apply -f rendered-frontend.yaml
+          '''
         }
       }
     }
@@ -64,10 +72,10 @@ pipeline {
 
   post {
     success {
-      echo "✅ Successfully deployed to ${params.DEPLOY_COLOR} environment!"
+      echo "✅ Successfully deployed ${params.DEPLOY_COLOR} version with image tag ${params.VERSION_TAG}!"
     }
     failure {
-      echo "❌ Deployment failed!"
+      echo "❌ Deployment failed. Check logs above."
     }
   }
 }
