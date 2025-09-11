@@ -16,4 +16,4 @@ spec:
         - name: backend
           image: 921483785411.dkr.ecr.us-east-1.amazonaws.com/vin-notes-app:v1.0-green
           ports:
-            - containerPort: 3001
+            - containerPort: 80
