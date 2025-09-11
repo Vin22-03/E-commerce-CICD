@@ -19,7 +19,6 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: vincloudops/frontend:v1.0-blue
+          image: 921483785411.dkr.ecr.us-east-1.amazonaws.com/frontend:v1.0-blue
           ports:
             - containerPort: 3001
-
