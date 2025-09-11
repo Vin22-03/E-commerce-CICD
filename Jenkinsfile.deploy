@@ -17,7 +17,7 @@ pipeline {
 
     stage('Configure kubeconfig') {
       steps {
-        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
+        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']])
           sh '''
             echo "⚙️ Setting up kubeconfig for EKS cluster"
             aws eks update-kubeconfig \
