@@ -1,5 +1,5 @@
 pipeline {
-  agent any
+  agent { label 'any' }
 
   parameters {
     choice(name: 'DEPLOY_COLOR', choices: ['blue', 'green'], description: 'Choose which version to deploy')
