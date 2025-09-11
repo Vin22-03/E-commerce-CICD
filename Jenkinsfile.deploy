@@ -50,8 +50,11 @@ pipeline {
         withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
           withEnv(["KUBECONFIG=${env.KUBECONFIG}"]) {
             sh '''
-              echo "📦 Deploying using: k8s/deployment-${DEPLOY_COLOR}.yaml"
+              echo "📦 Deploying backend: k8s/deployment-${DEPLOY_COLOR}.yaml"
               kubectl apply -f k8s/deployment-${DEPLOY_COLOR}.yaml
+
+              echo "🎨 Deploying frontend: k8s/frontend-${DEPLOY_COLOR}.yaml"
+              kubectl apply -f k8s/frontend-${DEPLOY_COLOR}.yaml
             '''
           }
         }
