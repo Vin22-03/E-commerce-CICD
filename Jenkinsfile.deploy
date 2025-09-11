@@ -7,8 +7,8 @@ pipeline {
 
   environment {
     CLUSTER_NAME = 'vincloudops-ecommerce-eks'
-    AWS_REGION = 'us-east-1'
-    KUBECONFIG = "${env.WORKSPACE}/kubeconfig"
+    AWS_REGION   = 'us-east-1'
+    KUBECONFIG   = "${env.WORKSPACE}/kubeconfig"
   }
 
   stages {
@@ -27,11 +27,64 @@ pipeline {
 
     stage('Deploy to EKS') {
       steps {
-        withEnv(["KUBECONFIG=${env.KUBECONFIG}"]) {
-          script {
-            def deployFile = "k8s/deployment-${params.DEPLOY_COLOR}.yaml"
-            echo "📦 Deploying using: ${deployFile}"
-            sh "kubectl apply -f ${deployFile}"
+        // ⬇️ Wrap kubectl also with AWS credentials
+        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
+          withEnv(["KUBECONFIG=${env.KUBECONFIG}"]) {
+            sh '''
+              echo "📦 Deploying using: k8s/deployment-${DEPLOY_COLOR}.yaml"
+              kubectl apply -f k8s/deployment-${DEPLOY_COLOR}.yaml
+            '''
+          }
+        }
+      }
+    }
+  }
+
+  post {
+    success {
+      echo "✅ Successfully deployed to ${params.DEPLOY_COLOR} environment!"
+    }
+    failure {
+      echo "❌ Deployment failed!"
+    }
+  }
+}
+pipeline {
+  agent any
+
+  parameters {
+    choice(name: 'DEPLOY_COLOR', choices: ['blue', 'green'], description: 'Choose which version to deploy')
+  }
+
+  environment {
+    CLUSTER_NAME = 'vincloudops-ecommerce-eks'
+    AWS_REGION   = 'us-east-1'
+    KUBECONFIG   = "${env.WORKSPACE}/kubeconfig"
+  }
+
+  stages {
+    stage('Configure kubeconfig') {
+      steps {
+        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
+          sh '''
+            aws eks update-kubeconfig \
+              --name $CLUSTER_NAME \
+              --region $AWS_REGION \
+              --kubeconfig $KUBECONFIG
+          '''
+        }
+      }
+    }
+
+    stage('Deploy to EKS') {
+      steps {
+        // ⬇️ Wrap kubectl also with AWS credentials
+        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
+          withEnv(["KUBECONFIG=${env.KUBECONFIG}"]) {
+            sh '''
+              echo "📦 Deploying using: k8s/deployment-${DEPLOY_COLOR}.yaml"
+              kubectl apply -f k8s/deployment-${DEPLOY_COLOR}.yaml
+            '''
           }
         }
       }

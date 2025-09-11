@@ -13,6 +13,11 @@ RUN apt-get update && apt-get install -y \
     awscli \
     gnupg software-properties-common
 
+# Install kubectl (official v1.29.0 or latest stable)
+RUN curl -LO https://dl.k8s.io/release/v1.29.4/bin/linux/amd64/kubectl && \
+    chmod +x kubectl && \
+    mv kubectl /usr/local/bin/
+
 # Install Terraform (v1.6.6)
 RUN wget https://releases.hashicorp.com/terraform/1.6.6/terraform_1.6.6_linux_amd64.zip && \
     unzip terraform_1.6.6_linux_amd64.zip && \
@@ -36,16 +41,13 @@ RUN curl -sSLo sonar-scanner.zip https://binaries.sonarsource.com/Distribution/s
     ln -s /opt/sonar-scanner/bin/sonar-scanner /usr/local/bin/sonar-scanner && \
     rm sonar-scanner.zip
 
-# Install Java 17 (Required for SonarScanner 4.8+)
-
+# ☕ Install Java 17 (Required for SonarScanner 4.8+)
 RUN apt-get update && apt-get install -y openjdk-17-jdk
 
 ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 ENV PATH=$JAVA_HOME/bin:$PATH
 
-
-
-# 🛠️ Re-create docker group and add Jenkins to it (to avoid socket permission errors)
+# 🛠️ Add Jenkins to Docker group
 RUN groupmod -g ${DOCKER_GID} docker || true && \
     usermod -aG docker jenkins
 
