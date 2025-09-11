@@ -1,4 +1,3 @@
-// 🚀 Add input parameter to Jenkins job
 properties([
   parameters([
     string(name: 'VERSION_TAG', defaultValue: 'v1.0-blue', description: 'Enter Docker image version tag (e.g., v1.1-green)')
@@ -9,11 +8,12 @@ pipeline {
   agent any
 
   environment {
-    TF_DIR       = 'terraform'
-    AWS_REGION   = 'us-east-1'
-    ECR_URL      = '921483785411.dkr.ecr.us-east-1.amazonaws.com'
-    APP_NAME     = 'vin-notes-app'
-    FULL_IMAGE   = "${ECR_URL}/${APP_NAME}:${VERSION_TAG}"
+    TF_DIR        = 'terraform'
+    AWS_REGION    = 'us-east-1'
+    AWS_ACCOUNT   = '921483785411'
+    ECR_URL       = "${AWS_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+    BACKEND_APP   = 'vin-notes-app'
+    FRONTEND_APP  = 'frontend'
   }
 
   stages {
@@ -23,69 +23,56 @@ pipeline {
       }
     }
 
-    stage('Terraform Init') {
+    stage('Terraform Init/Plan/Apply') {
       steps {
         dir("${env.TF_DIR}") {
-          withCredentials([
-            [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']
-          ]) {
-            sh 'terraform init -reconfigure'
+          withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
+            sh '''
+              echo "⚙️ Initializing Terraform"
+              terraform init -reconfigure
+
+              echo "✅ Validating Terraform"
+              terraform validate
+
+              echo "📋 Planning Infrastructure"
+              terraform plan -var-file=terraform.tfvars -out=tfplan
+
+              echo "🚀 Applying Infrastructure"
+              terraform apply -auto-approve tfplan
+            '''
           }
         }
       }
     }
 
-    stage('Terraform Validate') {
+    stage('Build & Push Backend Image') {
       steps {
-        dir("${env.TF_DIR}") {
-          withCredentials([
-            [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']
-          ]) {
-            sh 'terraform validate'
-          }
-        }
-      }
-    }
-
-    stage('Terraform Plan') {
-      steps {
-        dir("${env.TF_DIR}") {
-          withCredentials([
-            [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']
-          ]) {
-            // Only create the plan
-            sh 'terraform plan -var-file=terraform.tfvars -out=tfplan'
-          }
-        }
-      }
-    }
-
-    stage('Terraform Apply') {
-      steps {
-        dir("${env.TF_DIR}") {
-          withCredentials([
-            [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']
-          ]) {
-            sh 'terraform apply -auto-approve tfplan'
-          }
-        }
-      }
-    }
-
-    stage('Docker Build & Push') {
-      steps {
-        withCredentials([
-          [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']
-        ]) {
+        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
           sh '''
-            echo "🛠️ Building Docker Image: $FULL_IMAGE"
-            docker build -t $FULL_IMAGE ./backend
+            BACKEND_IMAGE=$ECR_URL/$BACKEND_APP:${VERSION_TAG}
+            echo "🛠️ Building Backend Image: $BACKEND_IMAGE"
+            docker build -t $BACKEND_IMAGE ./backend
 
             echo "🔐 Logging in to ECR"
             aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_URL
 
-            echo "📦 Pushing Image to ECR"
-            docker push $FULL_IMAGE
+            echo "⬆️ Pushing Backend Image"
+            docker push $BACKEND_IMAGE
+          '''
+        }
+      }
+    }
+
+    stage('Build & Push Frontend Image') {
+      steps {
+        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
+          sh '''
+            FRONTEND_IMAGE=$ECR_URL/$FRONTEND_APP:${VERSION_TAG}
+            echo "🎨 Building Frontend Image: $FRONTEND_IMAGE"
+            docker build -t $FRONTEND_IMAGE ./frontend
+
+            echo "⬆️ Pushing Frontend Image"
+            docker push $FRONTEND_IMAGE
           '''
         }
       }
@@ -93,11 +80,13 @@ pipeline {
   }
 
   post {
-    failure {
-      echo '❌ Deployment pipeline failed!'
-    }
     success {
-      echo "✅ Docker Image pushed as: ${env.FULL_IMAGE}"
+      echo "✅ Pipeline succeeded!"
+      echo "📦 Backend Image: ${ECR_URL}/${BACKEND_APP}:${VERSION_TAG}"
+      echo "🎨 Frontend Image: ${ECR_URL}/${FRONTEND_APP}:${VERSION_TAG}"
+    }
+    failure {
+      echo "❌ Pipeline failed! Check logs."
     }
   }
 }
