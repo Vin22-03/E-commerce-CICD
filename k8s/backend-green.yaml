@@ -22,7 +22,7 @@ spec:
           image: 921483785411.dkr.ecr.us-east-1.amazonaws.com/vin-notes-app:${VERSION_TAG}
           ports:
             - containerPort: 8080
-                    env:
+     env:
           - name: APP_VERSION
-            value: "v1.5-green"  # Change this dynamically via Jenkins
+            value: "${VERSION_TAG}"  # This will be replaced by Jenkins
 
