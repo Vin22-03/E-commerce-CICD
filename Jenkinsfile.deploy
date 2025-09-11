@@ -3,6 +3,7 @@ pipeline {
 
   parameters {
     choice(name: 'DEPLOY_COLOR', choices: ['blue', 'green'], description: 'Choose which version to deploy')
+    booleanParam(name: 'APPLY_SERVICES', defaultValue: false, description: 'Apply service YAMLs (use only on first deploy or when modified)')
   }
 
   environment {
@@ -12,10 +13,12 @@ pipeline {
   }
 
   stages {
+
     stage('Configure kubeconfig') {
       steps {
         withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
           sh '''
+            echo "⚙️ Setting up kubeconfig for EKS cluster"
             aws eks update-kubeconfig \
               --name $CLUSTER_NAME \
               --region $AWS_REGION \
@@ -25,60 +28,25 @@ pipeline {
       }
     }
 
-    stage('Deploy to EKS') {
+    stage('Deploy Services (Optional)') {
+      when {
+        expression { return params.APPLY_SERVICES == true }
+      }
       steps {
-        // ⬇️ Wrap kubectl also with AWS credentials
         withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
           withEnv(["KUBECONFIG=${env.KUBECONFIG}"]) {
             sh '''
-              echo "📦 Deploying using: k8s/deployment-${DEPLOY_COLOR}.yaml"
-              kubectl apply -f k8s/deployment-${DEPLOY_COLOR}.yaml
+              echo "🌐 Applying frontend & backend service YAMLs"
+              kubectl apply -f k8s/frontend-service.yaml
+              kubectl apply -f k8s/backend-service.yaml
             '''
           }
         }
       }
     }
-  }
-
-  post {
-    success {
-      echo "✅ Successfully deployed to ${params.DEPLOY_COLOR} environment!"
-    }
-    failure {
-      echo "❌ Deployment failed!"
-    }
-  }
-}
-pipeline {
-  agent any
-
-  parameters {
-    choice(name: 'DEPLOY_COLOR', choices: ['blue', 'green'], description: 'Choose which version to deploy')
-  }
-
-  environment {
-    CLUSTER_NAME = 'vincloudops-ecommerce-eks'
-    AWS_REGION   = 'us-east-1'
-    KUBECONFIG   = "${env.WORKSPACE}/kubeconfig"
-  }
-
-  stages {
-    stage('Configure kubeconfig') {
-      steps {
-        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
-          sh '''
-            aws eks update-kubeconfig \
-              --name $CLUSTER_NAME \
-              --region $AWS_REGION \
-              --kubeconfig $KUBECONFIG
-          '''
-        }
-      }
-    }
 
     stage('Deploy to EKS') {
       steps {
-        // ⬇️ Wrap kubectl also with AWS credentials
         withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
           withEnv(["KUBECONFIG=${env.KUBECONFIG}"]) {
             sh '''
