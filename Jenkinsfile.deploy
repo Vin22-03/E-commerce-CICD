@@ -85,7 +85,7 @@ pipeline {
         }
       }
     }
-
+ }
   post {
     success {
       echo "✅ Successfully deployed ${params.DEPLOY_COLOR} version with image tag ${params.VERSION_TAG}!"
