@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -57,7 +58,8 @@ def get_status():
 # ✅ App version endpoint
 @app.get("/version")
 def get_version():
-    return {"version": "v1.0-blue"}
+    version = os.getenv("APP_VERSION", "unknown")
+    return {"version": version}
 
 # ✅ Health check for DevOps monitoring
 @app.get("/health")
