@@ -1,2 +1,15 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Logs
+*.log
+
+# Editor folders
+.vscode/
+.idea/
 .terraform/
 terraform.tfstate*
