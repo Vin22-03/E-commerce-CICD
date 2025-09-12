@@ -69,6 +69,22 @@ pipeline {
         }
       }
     }
+
+    stage('Patch Services to New Version') {
+      steps {
+        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr']]) {
+          withEnv(["KUBECONFIG=${env.KUBECONFIG}", "DEPLOY_COLOR=${params.DEPLOY_COLOR}"]) {
+            sh '''
+              echo "🔧 Patching backend-svc to point to version=$DEPLOY_COLOR"
+              kubectl patch svc backend-svc -p "{\"spec\":{\"selector\":{\"app\":\"backend\",\"version\":\"$DEPLOY_COLOR\"}}}"
+
+              echo "🔧 Patching frontend-service to point to version=$DEPLOY_COLOR"
+              kubectl patch svc frontend-service -p "{\"spec\":{\"selector\":{\"app\":\"frontend\",\"version\":\"$DEPLOY_COLOR\"}}}"
+            '''
+          }
+        }
+      }
+    }
   }
 
   post {

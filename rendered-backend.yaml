@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-green
+  labels:
+    app: backend
+    version: green
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+      version: green
+  template:
+    metadata:
+      labels:
+        app: backend
+        version: green
+    spec:
+      containers:
+        - name: vin-notes-app
+          image: 921483785411.dkr.ecr.us-east-1.amazonaws.com/vin-notes-app:
+          ports:
+            - containerPort: 8080
+     env:
+          - name: APP_VERSION
+            value: ""  # This will be replaced by Jenkins
+
